@@ -1,3 +1,23 @@
-.idea
-target
-project/project
+# Build output
+target/
+project/target/
+project/project/
+
+# Spark / Hive local artifacts
+metastore_db/
+derby.log
+spark-warehouse/
+hive/
+
+# IDE files
+.idea/
+*.iml
+.bsp/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
