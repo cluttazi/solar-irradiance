@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/cluttazi/solar-irradiance/actions/workflows/ci.yml/badge.svg)](https://github.com/cluttazi/solar-irradiance/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Scala](https://img.shields.io/badge/Scala-2.11-red.svg)](https://www.scala-lang.org/)
-[![Spark](https://img.shields.io/badge/Apache%20Spark-2.1-e25a1c.svg)](https://spark.apache.org/)
+[![Scala](https://img.shields.io/badge/Scala-2.13-red.svg)](https://www.scala-lang.org/)
+[![Spark](https://img.shields.io/badge/Apache%20Spark-4.2-e25a1c.svg)](https://spark.apache.org/)
 
 An Apache Spark data pipeline that ingests solar radiation (NSRDB) and weather station data into Hive tables and prepares it as a clean feature set for machine-learning models that predict solar irradiance.
 
@@ -25,24 +25,30 @@ retrieval  ──►  preparation  ──►  processing
 
 ## Tech Stack
 
-- Scala 2.11
-- Apache Spark 2.1 (Core, SQL, Hive)
-- ScalaTest 3.0
-- sbt multi-project build, with `sbt-assembly` for fat JARs
+- Scala 2.13
+- Apache Spark 4.2 (Core, SQL, Hive)
+- ScalaTest 3.2
+- sbt 1.11 multi-project build, with `sbt-assembly` for fat JARs and scalafmt for formatting
 
 ## Getting Started
 
 ### Prerequisites
 
-- JDK 8
-- [sbt](https://www.scala-sbt.org/)
+- JDK 17 or 21 (Spark 4 requires Java 17+)
+- [sbt](https://www.scala-sbt.org/) 1.x (the version in `project/build.properties` is downloaded automatically)
 - The [NSRDB](https://nsrdb.nrel.gov/) station/measurement datasets and NOAA weather station data downloaded locally
 
 ### Configure the Dataset Location
 
-Point the pipeline at your local dataset root in
-`commons/src/main/scala/com/chrisluttazi/solarirradiance/commons/model/HiveTable.scala`
-(`RootPath.root`), which expects the layout:
+Point the pipeline at your local dataset root with either the
+`SOLAR_IRRADIANCE_DATA_ROOT` environment variable or the
+`solar.irradiance.data.root` JVM system property (the property wins), e.g.
+
+```bash
+export SOLAR_IRRADIANCE_DATA_ROOT=/path/to/datasets
+```
+
+The root directory is expected to have the layout:
 
 ```
 <root>/Stations/NSRDB_StationsMeta.csv
@@ -55,12 +61,14 @@ Point the pipeline at your local dataset root in
 
 ```bash
 sbt compile          # compile all modules
-sbt test             # runs the ingestion/preparation suites (requires the datasets above)
+sbt commons/test     # unit tests (no Spark session or datasets needed)
+sbt test             # also runs the ingestion/preparation suites (requires the datasets above)
+sbt scalafmtCheckAll # formatting check
 ```
 
 ## Continuous Integration
 
-Every push and pull request compiles all modules (main and test sources) on JDK 8 via [GitHub Actions](.github/workflows/ci.yml). The test suites themselves need the local datasets, so they are run manually.
+Every push and pull request checks formatting, compiles all modules (main and test sources) and runs the dataset-independent unit tests on JDK 21 via [GitHub Actions](.github/workflows/ci.yml). The Spark ingestion/preparation suites need the local datasets, so they are run manually.
 
 ## License
 
