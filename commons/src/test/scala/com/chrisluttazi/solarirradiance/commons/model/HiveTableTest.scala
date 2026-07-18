@@ -9,10 +9,11 @@ class HiveTableTest extends AnyFlatSpec with Matchers {
     val previous = sys.props.get(RootPath.SysProp)
     sys.props(RootPath.SysProp) = root
     try body
-    finally previous match {
-      case Some(value) => sys.props(RootPath.SysProp) = value
-      case None        => sys.props -= RootPath.SysProp
-    }
+    finally
+      previous match {
+        case Some(value) => sys.props(RootPath.SysProp) = value
+        case None        => sys.props -= RootPath.SysProp
+      }
   }
 
   "RootPath" should "resolve the dataset root from the system property" in {

@@ -1,6 +1,11 @@
 package com.chrisluttazi.solarirradiance.preparation
 
-import com.chrisluttazi.solarirradiance.commons.model.{stations, stationsDataId, weatherData, weatherDataUnclean}
+import com.chrisluttazi.solarirradiance.commons.model.{
+  stations,
+  stationsDataId,
+  weatherData,
+  weatherDataUnclean
+}
 import org.apache.spark.sql.SparkSession
 import org.slf4j.Logger
 
@@ -66,7 +71,9 @@ class Preparer(implicit logger: Logger, spark: SparkSession) extends Serializabl
     queryStringBuilder append s"SX72,SX73,SX74,SX75,SX76,SX77,SX81,SX82,SX83,SX84,SX85,SX86,SX87"
     queryStringBuilder append s"',','),element)"
 
-    sql(s"CREATE TABLE IF NOT EXISTS ${weatherData.name} AS SELECT * FROM (${queryStringBuilder.toString})")
+    sql(
+      s"CREATE TABLE IF NOT EXISTS ${weatherData.name} AS SELECT * FROM (${queryStringBuilder.toString})"
+    )
 
   }
 }
