@@ -1,30 +1,31 @@
 package com.chrisluttazi.solarirradiance.preparation
 
-import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import org.slf4j.{Logger, LoggerFactory}
 
-class PreparerTest extends FlatSpec with Matchers {
-  implicit val spark = SparkSession
+class PreparerTest extends AnyFlatSpec with Matchers {
+  implicit val spark: SparkSession = SparkSession
     .builder()
     .appName("Retriever test")
     .config("spark.sql.warehouse.dir", "file:${system:user.dir}/hive")
     .config("spark.master", "local")
     .enableHiveSupport()
     .getOrCreate()
-  implicit val logger: Logger = Logger getLogger (this getClass)
+  implicit val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   "The preparation process" should "create tables" in {
 
-    new Preparer prepare
-    val solar_data = spark sql "SELECT * FROM stations_data"
-    val weather_data = spark sql "SELECT * FROM weather_data"
+    new Preparer().prepare()
+    val solar_data = spark.sql("SELECT * FROM stations_data")
+    val weather_data = spark.sql("SELECT * FROM weather_data")
 
-    solar_data.count should not be 0
-    weather_data.count should not be 0
+    solar_data.count() should not be 0
+    weather_data.count() should not be 0
 
-    logger info s"Solar Data count: ${solar_data count}"
-    logger info s"Weather Data count: ${weather_data count}"
+    logger.info(s"Solar Data count: ${solar_data.count()}")
+    logger.info(s"Weather Data count: ${weather_data.count()}")
   }
 
 }

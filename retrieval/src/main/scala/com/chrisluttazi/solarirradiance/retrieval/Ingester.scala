@@ -3,8 +3,8 @@ package com.chrisluttazi.solarirradiance.retrieval
 import java.io.File
 
 import com.chrisluttazi.solarirradiance.commons.model._
-import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
+import org.slf4j.Logger
 
 class Ingester(implicit logger: Logger, spark: SparkSession) extends Serializable {
 
@@ -13,11 +13,11 @@ class Ingester(implicit logger: Logger, spark: SparkSession) extends Serializabl
   val stateCode: String = "AZ"
   val force: Boolean = false
 
-  def ingest {
+  def ingest(): Unit = {
     createTable(stations)
     val stationsDataValue: HiveTable = stationsData
     stationsDataValue.files = spark
-      .sql(s"SELECT usaf FROM  ${stations name} WHERE class < 3 AND st='$stateCode'")
+      .sql(s"SELECT usaf FROM  ${stations.name} WHERE class < 3 AND st='$stateCode'")
       .rdd
       .map(
         _.toString
@@ -28,38 +28,35 @@ class Ingester(implicit logger: Logger, spark: SparkSession) extends Serializabl
     createTable(weatherStations)
     createTable(weatherStationsData)
 
-    sql(s"CREATE TABLE IF NOT EXISTS ${weatherDataUnclean name} AS SELECT * FROM (" +
-      s"select regexp_extract(input_file_name(), '[0-9]{6}',0) as usaf, * from ${stationsData name}" +
+    sql(s"CREATE TABLE IF NOT EXISTS ${weatherDataUnclean.name} AS SELECT * FROM (" +
+      s"select regexp_extract(input_file_name(), '[0-9]{6}',0) as usaf, * from ${stationsData.name}" +
       s")")
 
-    sql(s"CREATE TABLE IF NOT EXISTS ${weatherData name} AS SELECT * FROM (" +
+    sql(s"CREATE TABLE IF NOT EXISTS ${weatherData.name} AS SELECT * FROM (" +
       s"SELECT ws.latitude, ws.longitude, ws.elevation, wsd.date, wsd.element, wsd.value "
-      + s"FROM ${weatherStationsData name} as wsd "
-      + s"LEFT JOIN ${weatherStations name} as ws ON (wsd.id = ws.id) "
+      + s"FROM ${weatherStationsData.name} as wsd "
+      + s"LEFT JOIN ${weatherStations.name} as ws ON (wsd.id = ws.id) "
       + s"WHERE ws.state ='$stateCode'" +
       s")")
   }
 
-  private def createTable(hiveTable: HiveTable)(implicit spark: SparkSession) = {
+  private def createTable(hiveTable: HiveTable)(implicit spark: SparkSession): Unit = {
     import spark.sql
-    if (sql(s"SHOW TABLES LIKE '${hiveTable name}'").collect().length == 0 || force) {
+    if (sql(s"SHOW TABLES LIKE '${hiveTable.name}'").collect().length == 0 || force) {
       //work with solar stations
-      sql(s"DROP TABLE IF EXISTS ${hiveTable name}")
-      sql(s"CREATE TABLE ${hiveTable name} (" +
+      sql(s"DROP TABLE IF EXISTS ${hiveTable.name}")
+      sql(s"CREATE TABLE ${hiveTable.name} (" +
         hiveTable.metadata +
         s") row format delimited fields terminated by ',' " +
-        s"${hiveTable header}")
-      if ( {
-        hiveTable files
-      } isEmpty) {
-        sql(s"LOAD DATA LOCAL INPATH '${hiveTable path}' " +
-          s"OVERWRITE INTO TABLE ${hiveTable name}")
-      }
-      else {
-        for (file <- hiveTable files) {
+        s"${hiveTable.header}")
+      if (hiveTable.files.isEmpty) {
+        sql(s"LOAD DATA LOCAL INPATH '${hiveTable.path}' " +
+          s"OVERWRITE INTO TABLE ${hiveTable.name}")
+      } else {
+        for (file <- hiveTable.files) {
           sql(s"LOAD DATA LOCAL INPATH " +
-            s"'${hiveTable path}$file*' " +
-            s"INTO TABLE ${hiveTable name}")
+            s"'${hiveTable.path}$file*' " +
+            s"INTO TABLE ${hiveTable.name}")
         }
       }
     }
