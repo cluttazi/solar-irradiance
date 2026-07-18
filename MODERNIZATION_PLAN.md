@@ -70,4 +70,66 @@ Date: 2026-07-18 · Branch: `claude/repo-modernization-audit-6se2sn`
 
 ## 3. Done vs Deferred
 
-_Filled in at the end of the modernization pass — see bottom of file._
+### Done
+
+- sbt 0.13.13 → **1.11.7**; Scala 2.11.7 → **2.13.18**; JDK target 8 → **21**
+  (`-release 17`, matching Spark 4's minimum).
+- Spark 2.1.1 → **4.2.0** (core/sql/hive), including the full migration:
+  log4j 1.x → slf4j loggers, `Test / fork` with the JDK 17+ `--add-opens`
+  set, ScalaTest 3.0 → **3.2.20** (`AnyFlatSpec` / `matchers.should.Matchers`).
+- Scala 2.13 syntax modernization: no postfix operators, no procedure
+  syntax, explicit types on implicits, explicit `()` on side-effecting calls.
+- Plugins: sbt-assembly **2.3.1**; sbt-dependency-graph → built-in
+  `addDependencyTreePlugin`; dropped unused Artima resolver.
+- Bug fixes: configurable dataset root (`solar.irradiance.data.root` /
+  `SOLAR_IRRADIANCE_DATA_ROOT`) replacing the `???` placeholder, with new
+  dataset-independent unit tests in `commons` (3 tests, all pass);
+  `PreparerTest` now asserts on the tables the Preparer actually creates
+  (`solar_data`, `weather_data_clean`).
+- scalafmt 3.11.4 via sbt-scalafmt 2.5.5 (2.6.x needs sbt ≥ 1.12); whole
+  codebase formatted; check enforced in CI.
+- README refreshed (toolchain, dataset-root configuration, build/test docs).
+- CI: JDK 8 → 21 (temurin), sbt 1.x task syntax, added format check and
+  `commons/test`; kept checkout@v4 / setup-java@v4 / sbt-setup@v1 / sbt cache.
+- Security: leaves the EOL Spark 2.1.1 line (CVE-2018-8024, CVE-2018-17190,
+  CVE-2019-10099, CVE-2020-9480, CVE-2022-33891, CVE-2023-22946, …) and the
+  transitive log4j 1.x (CVE-2019-17571, CVE-2021-4104) behind; Spark 4.2.0
+  had no known unpatched CVEs at time of writing.
+
+### Deferred
+
+- **Running the Spark ingestion/preparation suites**: they require the local
+  NSRDB/NOAA datasets (unchanged constraint; CI compiles + runs unit tests
+  only). They compile, boot a local Spark 4 session on JDK 21, and fail
+  fast with a clear configuration error instead of `NotImplementedError`.
+- **ANSI SQL mode**: Spark 4 enables `spark.sql.ansi.enabled` by default;
+  the pipeline's Hive-style queries were written under Spark 2 semantics.
+  Verify against real datasets before relying on outputs (sentinel-value
+  comparisons should be unaffected, but casts of malformed CSV fields now
+  error instead of returning NULL).
+- **`processing` module** has no sources; left as-is.
+- **Semantic oddity (pre-existing, unchanged)**: `weatherDataUnclean`
+  (table `weather_data`) is populated from *solar* station files in
+  `Ingester`; renaming would change on-disk table names, so it is only
+  noted here.
+- Scala 3 / sbt 2 migration: out of scope for a conservative pass.
+
+## 4. Summary (PR-description style)
+
+**What changed**: the build is brought from a 2016/2017 stack (sbt 0.13,
+Scala 2.11, Spark 2.1, JDK 8) that can no longer be resolved or run, to a
+current one (sbt 1.11.7, Scala 2.13.18, Spark 4.2.0, JDK 21) with scalafmt,
+dataset-root configuration via env var/system property, two real bug fixes,
+new unit tests, and CI that checks formatting, compiles everything, and runs
+the dataset-independent tests on JDK 21.
+
+**Risks**: Spark 2 → 4 is a four-major-version jump; the SQL surface used
+here is small (Hive DDL + `LOAD DATA` + `input_file_name`/`regexp_extract`/
+`array_contains`) and compiles clean, but the ingestion/preparation flows
+could not be executed end-to-end without the proprietary datasets — ANSI
+mode and Hive-metastore behavior differences should be validated on a real
+dataset run. `RootPath.root` changed from a `val` (that always threw) to a
+`def`; `ingest`/`prepare` gained explicit `()` parameter lists.
+
+**Untouched**: pipeline SQL/business logic, table names and schemas, module
+layout, `processing` placeholder module, LICENSE, .editorconfig, .gitignore.
