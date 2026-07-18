@@ -1,12 +1,17 @@
 package com.chrisluttazi.solarirradiance.preparation
 
-import com.chrisluttazi.solarirradiance.commons.model.{stations, stationsDataId, weatherData, weatherDataUnclean}
-import org.apache.log4j.Logger
+import com.chrisluttazi.solarirradiance.commons.model.{
+  stations,
+  stationsDataId,
+  weatherData,
+  weatherDataUnclean
+}
 import org.apache.spark.sql.SparkSession
+import org.slf4j.Logger
 
 class Preparer(implicit logger: Logger, spark: SparkSession) extends Serializable {
 
-  def prepare {
+  def prepare(): Unit = {
     import spark.sql
 
     val nullValue = "null"
@@ -17,7 +22,7 @@ class Preparer(implicit logger: Logger, spark: SparkSession) extends Serializabl
     queryStringBuilder append s"(d.etr) sumwatts, "
     queryStringBuilder append s"d.precipwat, d.aod "
     // FROM CLAUSE
-    queryStringBuilder append s"FROM ${stationsDataId name} AS d INNER JOIN ${stations name} AS s ON ( d.usaf = s.usaf ) "
+    queryStringBuilder append s"FROM ${stationsDataId.name} AS d INNER JOIN ${stations.name} AS s ON ( d.usaf = s.usaf ) "
     // WHERE clause start
     queryStringBuilder append s"WHERE d.usaf is not $nullValue AND "
     queryStringBuilder append s"d.date is not $nullValue AND "
@@ -40,12 +45,12 @@ class Preparer(implicit logger: Logger, spark: SparkSession) extends Serializabl
     queryStringBuilder append s"d.aod != -9900.0 AND d.aod is not $nullValue AND "
     queryStringBuilder append s"d.aodflg != 99 AND d.aodflg is not $nullValue"
     // WHERE clause end
-    sql(s"CREATE TABLE IF NOT EXISTS solar_data AS SELECT * FROM (${queryStringBuilder toString})")
+    sql(s"CREATE TABLE IF NOT EXISTS solar_data AS SELECT * FROM (${queryStringBuilder.toString})")
 
     queryStringBuilder.clear()
 
     //    //filtering by the weather features that are most significative
-    queryStringBuilder append s"SELECT * FROM ${weatherDataUnclean name} "
+    queryStringBuilder append s"SELECT * FROM ${weatherDataUnclean.name} "
     queryStringBuilder append s"WHERE array_contains(split('"
     queryStringBuilder append s"TMAX,TMIN,ACMC,ACMH,ACSC,ACSH,DAEV,DAPR,"
     queryStringBuilder append s"EVAP,MDEV,MDPR,PGTM,PSUN,SN,SX,TAVG,TOBS,TSUN,WT,WV,"
@@ -66,8 +71,9 @@ class Preparer(implicit logger: Logger, spark: SparkSession) extends Serializabl
     queryStringBuilder append s"SX72,SX73,SX74,SX75,SX76,SX77,SX81,SX82,SX83,SX84,SX85,SX86,SX87"
     queryStringBuilder append s"',','),element)"
 
-    sql(s"CREATE TABLE IF NOT EXISTS ${weatherData name} AS SELECT * FROM (${queryStringBuilder toString})")
-
+    sql(
+      s"CREATE TABLE IF NOT EXISTS ${weatherData.name} AS SELECT * FROM (${queryStringBuilder.toString})"
+    )
 
   }
 }
