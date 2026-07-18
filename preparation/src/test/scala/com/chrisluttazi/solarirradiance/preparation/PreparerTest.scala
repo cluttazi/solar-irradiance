@@ -18,8 +18,8 @@ class PreparerTest extends AnyFlatSpec with Matchers {
   "The preparation process" should "create tables" in {
 
     new Preparer().prepare()
-    val solar_data = spark.sql("SELECT * FROM stations_data")
-    val weather_data = spark.sql("SELECT * FROM weather_data")
+    val solar_data = spark.sql("SELECT * FROM solar_data")
+    val weather_data = spark.sql("SELECT * FROM weather_data_clean")
 
     solar_data.count() should not be 0
     weather_data.count() should not be 0

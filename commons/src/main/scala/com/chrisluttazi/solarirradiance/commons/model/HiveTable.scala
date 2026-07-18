@@ -1,8 +1,26 @@
 package com.chrisluttazi.solarirradiance.commons.model
 
+object RootPath {
+  /** Environment variable naming the local dataset root directory. */
+  val EnvVar: String = "SOLAR_IRRADIANCE_DATA_ROOT"
+
+  /** System property naming the local dataset root directory (wins over the env var). */
+  val SysProp: String = "solar.irradiance.data.root"
+
+  def dataRoot: String =
+    sys.props
+      .get(SysProp)
+      .orElse(sys.env.get(EnvVar))
+      .getOrElse(
+        throw new IllegalStateException(
+          s"Dataset root not configured: set the -D$SysProp system property " +
+            s"or the $EnvVar environment variable to the datasets directory " +
+            s"(see README, 'Configure the Dataset Location')"))
+}
+
 class RootPath(path: String) {
-  // Datasources location
-  val root: String = ??? // s"/???/datasets"
+  // Datasources location, resolved from RootPath.SysProp / RootPath.EnvVar
+  def root: String = RootPath.dataRoot
 
   override def toString = s"$root$path"
 }
